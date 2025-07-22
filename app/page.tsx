@@ -4,14 +4,14 @@ import { UniverseButton } from "../components/UniverseButton";
 import CompanionCard from '../components/CompanionCard';
 import CompanionsList from '@/components/CompanionsList';
 import Cta from '@/components/Cta';
+import { recentSessions } from '@/constants';
 
 const Page = () => {
   return (
     <main>
-      <Button>Click me Bitch</Button>
-      <UniverseButton />
+      
 
-      <h1 className='text-3xl font-bold underline'>Popular companions</h1>
+      <h1 className='text-3xl font-bold'>Dashboard</h1>
       <section className = "home-section">
         <CompanionCard //this is passed as props to the CompanionCard component
           id="123"
@@ -41,7 +41,11 @@ const Page = () => {
       </section>
       
      <section className = "home-section">
-      <CompanionsList/>
+      <CompanionsList
+        title="Recently Completed Sessions"
+        companions = {recentSessions}
+        classNames = "w-2/3 max-lg:w-full"//
+      />
       <Cta/>
      </section>
 
