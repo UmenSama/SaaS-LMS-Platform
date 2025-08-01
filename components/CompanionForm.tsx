@@ -14,7 +14,7 @@ import {
     SelectValue,
   } from "@/components/ui/select"
   
-  import {
+import {
   Form,
   FormControl,
   FormDescription,
@@ -26,6 +26,8 @@ import {
 
 import { Input } from "@/components/ui/input"
 import { subjects } from "@/constants"
+import { createCompanion } from "@/lib/actions/companion.actions"
+import { redirect } from "next/navigation"
 
 
 const formSchema = z.object({
@@ -54,11 +56,15 @@ const CompanionForm = () => {
   })
  
   // 2. Define a submit handler.
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    // Do something with the form values.
-    // ✅ This will be type-safe and validated.
-    console.log(values)
+  const onSubmit= async  (values: z.infer<typeof formSchema>) => {
+    const companion = await createCompanion(values);
 
+    if(companion){
+      redirect(`/companions/${companion.id}`)
+    }else{
+      console.log("Failed to create companion");
+      redirect('/');
+    }
   }
 
   return (
@@ -120,7 +126,7 @@ const CompanionForm = () => {
 
 <FormField
         control={form.control}
-        name="name"
+        name="topic"
         render={({ field }) => (
           <FormItem>
             <FormLabel>What should the companion help with?</FormLabel>
@@ -134,7 +140,7 @@ const CompanionForm = () => {
 
 <FormField
         control={form.control}
-        name="subject"
+        name="voice"
         render={({ field }) => (
           <FormItem>
             <FormLabel>Voice</FormLabel>
@@ -201,13 +207,27 @@ const CompanionForm = () => {
         name="duration"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Estimated durantion in minutes</FormLabel>
+            <FormLabel>Estimated duration in minutes</FormLabel>
             <FormControl>
-              <Input type='number' placeholder="15" {...field} className="input" />
+              <Input 
+                type="number" 
+                placeholder="15"
+                value={field.value || ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '') {
+                    field.onChange(undefined);
+                  } else {
+                    field.onChange(Number(value));
+                  }
+                }}
+                className="input"
+              />
             </FormControl>
-            
             <FormMessage />
           </FormItem>
+                
+            
         )}
       />
 
