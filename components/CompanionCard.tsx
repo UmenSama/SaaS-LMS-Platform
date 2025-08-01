@@ -16,7 +16,7 @@ const CompanionCard = ({id, name, topic, subject, duration, color}:
     <article className="companion-card" style={{backgroundColor: color}}>
       <div className="flex justify-between items-center"> 
         <div className="subject-badge">{subject}</div>
-          <Image src="/icons/bookmark.svg" alt="bookmark" 
+          <Image src="/icons/bookmark-filled.svg" alt="bookmark" 
           width={12.5} height={15}/>
       </div>
 

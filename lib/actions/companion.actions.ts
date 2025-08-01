@@ -16,6 +16,33 @@ import { createSupabaseClient } from "../supabase";
     return data[0];
  }
 
+ export const getAllCompanions = async({limit=10,page=1, subject, topic}:GetAllCompanions)=>{
+  const supabase= createSupabaseClient();
+
+  let query = supabase.from('companions').select();
+
+  if (subject && topic){
+    query = query.ilike('subject', `%${subject}%`)
+    .or(`topic.ilike.%${topic}%, name.ilike.%${topic}%`)
+  }else if(subject){
+    query = query.ilike('subject', `%${subject}%`)
+  }else if(topic){
+    query = query.or(`topic.ilike.%${topic}%, name.ilike.%${topic}%`)
+  }
+
+    query=query.range((page-1)*limit, page*limit-1); //pagination 
+
+    const {data: companions, error} = await query; 
+    //	above line does these 3 things 
+    // 1.	query.data → assigned to a new variable called companions
+    //2.	query.error → assigned to a variable error
+    //3.	Awaits the query from Supabase
+    if(error) throw new Error(error.message);
+
+
+    return companions;
+}
+
  /*
  So, at runtime, an example formData object might look like:
  {
