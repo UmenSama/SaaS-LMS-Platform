@@ -1,5 +1,5 @@
 'use client'
-import { cn, getSubjectColor } from '@/lib/utils'
+import { cn, configureAssistant, getSubjectColor } from '@/lib/utils'
 import { vapi } from '@/lib/vapi.sdk'
 import Lottie, { LottieRefCurrentProps } from 'lottie-react'
 import Image from 'next/image'
@@ -18,6 +18,7 @@ const CompanionComponent = ({companionId, subject, topic, name, userName,
 
         const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE) //callStatus must always be one of the values from the CallStatus enum.
         const [isSpeaking, setIsSpeaking] = useState(false)
+        const [messages,setMessages] = useState<SavedMessage[]>([])
 
         const [isMuted,setIsMuted] = useState(false);
         const lottieRef = useRef<LottieRefCurrentProps>(null)
@@ -37,7 +38,15 @@ const CompanionComponent = ({companionId, subject, topic, name, userName,
 
             const onCallEnd = ()=> setCallStatus(CallStatus.FINISHED)
 
-            const onMessage = ()=> {}
+            const onMessage = (message: Message)=> {
+                if(message.type==='transcript' && message.transcriptType==='final'){ //Real-time Processing
+                    // VAPI sends message events with transcript data
+                    // message.type === 'transcript' - identifies transcript messages
+                    // message.transcriptType === 'final' - only final (not interim) transcripts
+                     const newMessage={role: message.role, content:message.transcript} //role is either user,system, or assistant
+                    setMessages((prev)=> [newMessage,...prev])
+                }
+            }
 
             const onSpeechStart =()=> setIsSpeaking(true)
             const onSpeechEnd =()=> setIsSpeaking(false)
@@ -68,16 +77,25 @@ const CompanionComponent = ({companionId, subject, topic, name, userName,
         }
 
         const handleCall = async () =>{
-            
+            setCallStatus(CallStatus.CONNECTING)
+
+            const assistantOverrides = {
+                variableValues: {subject,topic,style},
+                clientMessages: ['transcript'],
+                serverMessages: []
+            }
+            //@ts-expect-error
+            vapi.start(configureAssistant(voice,style),assistantOverrides)
         }
 
         const handleDisconnect=()=>{
-
+            setCallStatus(CallStatus.FINISHED)
+            vapi.stop()
         }
 
     return (
-    <section className="flex flex-col h-[70vh]">
-        <section className = "flex gap-8 max-sm:felx-col"> 
+    <section className="flex flex-col min-h-[70vh]">
+        <section className = "flex gap-8 max-sm:flex-col mb-8"> 
             <div className="companion-section">
                 <div className="companion-avatar" style={{backgroundColor: getSubjectColor(subject)}}>
                     <div className={
@@ -116,7 +134,7 @@ const CompanionComponent = ({companionId, subject, topic, name, userName,
                     {userName}
                 </p>
                 </div>
-                    <button className="btn-mic" onClick={toggleMicrophone}>
+                    <button className="btn-mic" onClick={toggleMicrophone} disabled={callStatus!== CallStatus.ACTIVE}>
                         <Image src={isMuted ? '/icons/mic-off.svg' : '/icons/mic-on.svg'} alt='mic' width={36} height={36} />
                         <p className="max-sm:hidden">
                             {isMuted? 'Turn on microphone': 'Turn off microphone'}
@@ -138,13 +156,25 @@ const CompanionComponent = ({companionId, subject, topic, name, userName,
             </div>
         </section>
         <section className='transcript'>
-            <div className='transcript-message '>
-                messages here
+            <div className='transcript-message no-scrollbar'>
+                {messages.map((message,index)=>{
+                    if(message.role==='assistant'){
+                        return(
+                            <p key={index} className="max-sm:text:sm">
+                                {name
+                                    .split(' ')[0]
+                                    .replace(/[.,]/g,'')
+                                }: {message.content}
+                            </p>
+                        )
+                    }else{
+                        return <p key={index} className="text-primary max-sm:text-sm">
+                            {userName} : {message.content}
+                        </p>
+                    }
+                })}
             </div>
-
-                <div className="transcript-fade"/>
-
-                
+                <div className="transcript-fade" />
         </section>
     </section>
   )
