@@ -5,45 +5,34 @@ import CompanionCard from '../components/CompanionCard';
 import CompanionsList from '@/components/CompanionsList';
 import Cta from '@/components/Cta';
 import { recentSessions } from '@/constants';
+import { getAllCompanions, getRecentSessions } from '@/lib/actions/companion.actions';
+import { getSubjectColor } from '@/lib/utils';
 
-const Page = () => {
+const Page = async () => {
+
+  const companions = await getAllCompanions({limit:3});
+  const recentSessionsCompanions = await getRecentSessions(10)
+
   return (
     <main>
-      
+      <h1>Popular Companions</h1>
 
-      <h1 className='text-3xl font-bold'>Dashboard</h1>
       <section className = "home-section">
-        <CompanionCard //this is passed as props to the CompanionCard component
-          id="123"
-          name = "Neura the brainy explorer"
-          topic="Math"
-          subject="science"
-          duration={45}
-          color = "#ffda6e"
-          />
+        {companions.map((companion)=>(
+            <CompanionCard //this is passed as props to the CompanionCard component
+              key={companion.id}
+              {...companion}
+              color={getSubjectColor(companion.subject)}
+            />
+        ))}
+        
 
-        <CompanionCard
-          id="245"
-          name = "number wizz"
-          topic="derivatives"
-          subject="math"
-          duration={30}
-          color = "#e5d0ff"
-        />
-        <CompanionCard
-          id="789"
-          name = "VOCAB BUILDER"
-          topic="Language"
-          subject="math"
-          duration={30}
-          color = "#BDE7FF"
-        />
       </section>
       
      <section className = "home-section">
       <CompanionsList
         title="Recently Completed Sessions"
-        companions = {recentSessions}
+        companions = {recentSessionsCompanions}
         classNames = "w-2/3 max-lg:w-full"//
       />
       <Cta/>
