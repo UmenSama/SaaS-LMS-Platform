@@ -124,5 +124,21 @@ Then you’re inserting this into Supabase with the additional author field from
 
   if(error) throw new Error(error.message)
 
-  return data.map(({companions})=> companions)
+  return data.map(({companions})=> companions) 
+  //Input: [{companions: {...}}, {companions: {...}}]
+  //Output: [{...}, {...}]
+}
+
+
+export const getUserCompanions = async (userId: string ,limit=10)=>{
+  const supabase = createSupabaseClient();
+  const {data,error} = await supabase
+    .from('companions')
+    .select()
+    .eq('author',userId)
+    
+
+  if(error) throw new Error(error.message)
+
+  return data
 }
