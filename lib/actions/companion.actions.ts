@@ -44,9 +44,8 @@ Then you’re inserting this into Supabase with the additional author field from
 } 
  */
 
- export const getAllCompanions = async({limit=10,page=1, subject, topic, includeBookmarks=false}:GetAllCompanions)=>{
+ export const getAllCompanions = async({limit=10,page=1, subject, topic}:GetAllCompanions)=>{
   const supabase= createSupabaseClient();
-  const {userId} = await auth();
 
   let query = supabase.from('companions').select();
 
@@ -68,23 +67,6 @@ Then you’re inserting this into Supabase with the additional author field from
     //3.	Awaits the query from Supabase
     if(error) throw new Error(error.message);
 
-    // If includeBookmarks is true and user is authenticated, add bookmark status
-    if (includeBookmarks && userId && companions.length > 0) {
-      // Get all bookmarks for this user for the returned companions
-      const companionIds = companions.map(c => c.id);
-      const {data: bookmarks} = await supabase
-        .from('bookmarks')
-        .select('companion_id')
-        .eq('user_id', userId)
-        .in('companion_id', companionIds);
-
-      const bookmarkedIds = new Set(bookmarks?.map(b => b.companion_id) || []);
-      
-      return companions.map(companion => ({
-        ...companion,
-        isBookmarked: bookmarkedIds.has(companion.id)
-      }));
-    }
 
     return companions;
 }
@@ -193,93 +175,3 @@ const companionCount = data?.length;
   }
 
 }
-
-// Bookmark functions
-export const toggleBookmark = async (companionId: string) => {
-  const { userId } = await auth();
-  if (!userId) throw new Error("User not authenticated");
-  
-  const supabase = createSupabaseClient();
-
-  // Check if bookmark already exists
-  const { data: existingBookmark, error: checkError } = await supabase
-    .from('bookmarks')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('companion_id', companionId)
-    .single();
-
-  if (checkError && checkError.code !== 'PGRST116') {
-    throw new Error(checkError.message);
-  }
-
-  if (existingBookmark) {
-    // Remove bookmark
-    const { error } = await supabase
-      .from('bookmarks')
-      .delete()
-      .eq('user_id', userId)
-      .eq('companion_id', companionId);
-
-    if (error) throw new Error(error.message);
-    return { bookmarked: false };
-  } else {
-    // Add bookmark
-    const { error } = await supabase
-      .from('bookmarks')
-      .insert({
-        user_id: userId,
-        companion_id: companionId,
-      });
-
-    if (error) throw new Error(error.message);
-    return { bookmarked: true };
-  }
-};
-
-export const getUserBookmarks = async (userId: string) => {
-  const supabase = createSupabaseClient();
-
-  // First get the companion IDs that are bookmarked by this user
-  const { data: bookmarkData, error: bookmarkError } = await supabase
-    .from('bookmarks')
-    .select('companion_id')
-    .eq('user_id', userId);
-
-  if (bookmarkError) throw new Error(bookmarkError.message);
-
-  if (!bookmarkData || bookmarkData.length === 0) {
-    return [];
-  }
-
-  // Get the companion details for the bookmarked companion IDs
-  const companionIds = bookmarkData.map(b => b.companion_id);
-  const { data: companions, error: companionError } = await supabase
-    .from('companions')
-    .select('id, name, subject, topic, duration')
-    .in('id', companionIds);
-
-  if (companionError) throw new Error(companionError.message);
-
-  return companions || [];
-};
-
-export const checkIfBookmarked = async (companionId: string) => {
-  const { userId } = await auth();
-  if (!userId) return false;
-  
-  const supabase = createSupabaseClient();
-
-  const { data, error } = await supabase
-    .from('bookmarks')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('companion_id', companionId)
-    .single();
-
-  if (error && error.code !== 'PGRST116') {
-    throw new Error(error.message);
-  }
-
-  return !!data;
-};
