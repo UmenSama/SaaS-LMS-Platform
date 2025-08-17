@@ -4,7 +4,12 @@ export const subjects = [
   "science",
   "history",
   "coding",
-  "economics",
+  "finance",
+  "philosophy",
+  "psychology",
+  "politics",
+  "health",
+  "other",
 ];
 
 export const subjectsColors = {
@@ -13,7 +18,12 @@ export const subjectsColors = {
   language: "#BDE7FF",
   coding: "#FFC8E4",
   history: "#FFECC8",
-  economics: "#C8FFDF",
+  finance: "#CFFFD0",
+  philosophy: "#FFF0D1",
+  psychology: "#E0D1FF",
+  politics: "#FFD6A5",
+  health: "#C0FFE5",
+  other: "#D0E0FF",
 };
 
 export const voices = {

@@ -63,7 +63,7 @@ export const createCompanion = async (formData: CreateCompanion) => {
 export const getAllCompanions = async ({ limit = 10, page = 1, subject, topic }: GetAllCompanions) => {
   const supabase = createSupabaseClient();
 
-  let query = supabase.from("companions").select();
+  let query = supabase.from("companions").select().order('created_at', { ascending: false });
 
   // Compose filters. NOTE: Supabase `.or()` expects a comma-separated list of filters.
   if (subject && topic) {

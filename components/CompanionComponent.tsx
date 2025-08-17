@@ -15,14 +15,15 @@ enum CallStatus{
 }
 
 const CompanionComponent = ({companionId, subject, topic, name, userName, 
-    userImage, style, voice}: CompanionComponentProps) => {
+    userImage, style, voice, duration}: CompanionComponentProps) => {
 
         const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE) //callStatus must always be one of the values from the CallStatus enum.
         const [isSpeaking, setIsSpeaking] = useState(false)
         const [messages,setMessages] = useState<SavedMessage[]>([])
 
-        const [isMuted,setIsMuted] = useState(false);
-        const lottieRef = useRef<LottieRefCurrentProps>(null)
+    const [isMuted,setIsMuted] = useState(false);
+    const lottieRef = useRef<LottieRefCurrentProps>(null)
+    const timerRef = useRef<NodeJS.Timeout | null>(null)
 
         useEffect(()=>{
             if(lottieRef){
@@ -35,11 +36,25 @@ const CompanionComponent = ({companionId, subject, topic, name, userName,
         },[isSpeaking,lottieRef])
 
         useEffect(()=>{
-            const onCallStart = ()=> setCallStatus(CallStatus.ACTIVE)
+            const onCallStart = ()=> {
+                setCallStatus(CallStatus.ACTIVE);
+                // Start timer for duration (in minutes)
+                if (duration && typeof duration === 'number' && duration > 0) {
+                    timerRef.current = setTimeout(() => {
+                        setCallStatus(CallStatus.FINISHED);
+                        vapi.stop();
+                    }, duration * 60 * 1000); // duration in ms
+                }
+            }
 
             const onCallEnd = ()=> {
                 setCallStatus(CallStatus.FINISHED);
-                addToSessionHistory(companionId)
+                addToSessionHistory(companionId);
+                // Clear timer if call ends early
+                if (timerRef.current) {
+                    clearTimeout(timerRef.current);
+                    timerRef.current = null;
+                }
             }
 
             const onMessage = (message: Message)=> {
@@ -71,6 +86,11 @@ const CompanionComponent = ({companionId, subject, topic, name, userName,
                 vapi.off('error',onError)
                 vapi.off('speech-start',onSpeechStart)
                 vapi.off('speech-end',onSpeechEnd)
+                // Clear timer on unmount
+                if (timerRef.current) {
+                    clearTimeout(timerRef.current);
+                    timerRef.current = null;
+                }
             }
         },[])
         
@@ -95,10 +115,15 @@ const CompanionComponent = ({companionId, subject, topic, name, userName,
         const handleDisconnect=()=>{
             setCallStatus(CallStatus.FINISHED)
             vapi.stop()
+            // Clear timer if manually disconnected
+            if (timerRef.current) {
+                clearTimeout(timerRef.current);
+                timerRef.current = null;
+            }
         }
 
-    return (
-    <section className="flex flex-col min-h-[70vh]">
+        return (
+            <section className="flex flex-col min-h-[70vh]">
         <section className = "flex gap-8 max-sm:flex-col mb-8"> 
             <div className="companion-section">
                 <div className="companion-avatar" style={{backgroundColor: getSubjectColor(subject)}}>
